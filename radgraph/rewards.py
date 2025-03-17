@@ -272,7 +272,7 @@ def compute_reward(
     ):
         return (0., 0., 0.) if reward_level == "all" else 0.
 
-    weighted_gauge = weighted_gauge_meas_reward(hypothesis_annotation_list, reference_annotation_list, alpha)
+    weighted_gauge = weighted_gauge_meas_f1_reward(hypothesis_annotation_list, reference_annotation_list, alpha)
     harmonic = weighted_harmonic_mean_reward(hypothesis_annotation_list, reference_annotation_list, beta)
     hierarchical = hierarchical_reward(hypothesis_annotation_list, reference_annotation_list)
 
