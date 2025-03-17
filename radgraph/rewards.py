@@ -278,5 +278,5 @@ def compute_reward(
 
     all_rewards = (weighted_gauge, harmonic, hierarchical)
 
-    return eval(reward_level)
+    return eval(all_rewards)
 
