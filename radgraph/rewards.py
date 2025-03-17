@@ -151,7 +151,7 @@ def exact_entity_token_match_reward(
 
 
 def weighted_gauge_meas_f1_reward(
-    hypothesis_annotation_list, reference_annotation_list, alpha=1.0
+    hypothesis_annotation_list, reference_annotation_list, alpha=10.0
 ):
     candidates = []
     for annotation_list in [hypothesis_annotation_list, reference_annotation_list]:
