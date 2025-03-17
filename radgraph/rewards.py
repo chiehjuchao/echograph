@@ -276,7 +276,7 @@ def compute_reward(
     harmonic = weighted_harmonic_mean_reward(hypothesis_annotation_list, reference_annotation_list, beta)
     hierarchical = hierarchical_reward(hypothesis_annotation_list, reference_annotation_list)
 
-    all_rewards = (weighted_gauge, harmonic, hierarchical)
+    all = (weighted_gauge, harmonic, hierarchical)
 
-    return eval(all_rewards)
+    return eval(reward_level)
 
