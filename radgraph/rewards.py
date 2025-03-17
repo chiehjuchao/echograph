@@ -150,6 +150,61 @@ def exact_entity_token_match_reward(
     return f1_score
 
 
+def weighted_gauge_meas_exact_entity_token_if_all_match_reward(
+        hypothesis_annotation_list, reference_annotation_list, alpha=1.0
+): # alpha=0: ignore Gauge MEAS entities. alpha=1: Gauge MEAS==Other entities. alpha=n>1: Gauge MEAS is worth n times other entities.
+    candidates = []
+    for annotation_list in [hypothesis_annotation_list[0], reference_annotation_list[0]]:
+        candidate = []
+        for entity in annotation_list["entities"].values():
+            is_meas_gauge = False
+            for r in entity["relations"]:
+                related_entity = annotation_list["entities"][r[1]]
+                if entity["label"] == "MEAS" and r[0] == "Gauge":
+                    candidate.append((entity["tokens"].lower(),
+                                      entity["label"],
+                                      r[0],
+                                      related_entity["tokens"].lower(),
+                                      "MEAS_GAUGE"))
+                    is_meas_gauge = True
+
+            if not entity["relations"] or not is_meas_gauge:
+                if not entity["relations"]:
+                    candidate.append((entity["tokens"].lower(), entity["label"]))
+                else:
+                    candidate.extend([(entity["tokens"].lower(),
+                                       entity["label"],
+                                       r[0],
+                                       annotation_list["entities"][r[1]]["tokens"].lower(),
+                                       "NON_MEAS_GAUGE")
+                                      for r in entity["relations"]])
+
+        candidate = set(candidate)
+        candidates.append(candidate)
+
+    hypothesis_relation_token_list, reference_relation_token_list = candidates
+
+    intersection = hypothesis_relation_token_list & reference_relation_token_list
+
+    def weighted_count(token_set, weight_meas_gauge):
+        return sum(weight_meas_gauge if len(token) > 4 and token[-1] == "MEAS_GAUGE" else 1 for token in token_set)
+
+    true_positive = weighted_count(intersection, alpha)
+    hypothesis_total = weighted_count(hypothesis_relation_token_list, alpha)
+    reference_total = weighted_count(reference_relation_token_list, alpha)
+
+    precision = true_positive / hypothesis_total if hypothesis_total > 0 else 0.0
+    recall = true_positive / reference_total if reference_total > 0 else 0.0
+
+    f1_score = (
+        (2 * precision * recall / (precision + recall))
+        if (precision + recall) > 0
+        else 0.0
+    )
+
+    return f1_score
+
+
 def compute_reward(
         hypothesis_annotation_list,
         reference_annotation_list,
