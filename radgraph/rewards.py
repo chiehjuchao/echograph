@@ -154,7 +154,7 @@ def weighted_gauge_meas_exact_entity_token_if_all_match_reward(
         hypothesis_annotation_list, reference_annotation_list, alpha=1.0
 ): # alpha=0: ignore Gauge MEAS entities. alpha=1: Gauge MEAS==Other entities. alpha=n>1: Gauge MEAS is worth n times other entities.
     candidates = []
-    for annotation_list in [hypothesis_annotation_list[0], reference_annotation_list[0]]:
+    for annotation_list in [hypothesis_annotation_list, reference_annotation_list]:
         candidate = []
         for entity in annotation_list["entities"].values():
             is_meas_gauge = False
