@@ -261,7 +261,7 @@ def compute_reward(
         hypothesis_annotation_list,
         reference_annotation_list,
         reward_level,
-        alpha=1.0,
+        alpha=10.0,
         beta=2.0
 ):
     assert reward_level in ["weighted_gauge", "harmonic", "hierarchical", "all"]
