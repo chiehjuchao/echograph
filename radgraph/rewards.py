@@ -258,26 +258,28 @@ def hierarchical_reward(hypothesis_annotation_list, reference_annotation_list):
 
 
 def entity_with_incoming_relations_reward(hypothesis_annotation_list, reference_annotation_list):
-    def build_entity_with_incoming(annotation_list):
-        incoming_relations = {eid: [] for eid in annotation_list["entities"]}
+    def build_entity_with_relations(annotation_list):
+        entities = annotation_list["entities"]
+        incoming_relations = {eid: [] for eid in entities}
 
-        # Find incoming relations for each entity
-        for eid, entity in annotation_list["entities"].items():
+        # Track incoming relations
+        for eid, entity in entities.items():
             for relation in entity.get("relations", []):
                 target_id = relation[1]
                 incoming_relations[target_id].append(entity["tokens"].lower())
 
         entity_sets = set()
-        for eid, entity in annotation_list["entities"].items():
-            tokens = [entity["tokens"].lower()] + sorted(incoming_relations[eid])
-            entity_representation = "|".join(tokens)
-            entity_sets.add((entity_representation, entity["label"]))
+        for eid, entity in entities.items():
+            has_outgoing_relations = bool(entity.get("relations"))
+            if not has_outgoing_relations:
+                tokens = [entity["tokens"].lower()] + sorted(incoming_relations[eid])
+                entity_representation = "|".join(tokens)
+                entity_sets.add((entity_representation, entity["label"]))
 
         return entity_sets
 
-    hypothesis_set = build_entity_with_incoming(hypothesis_annotation_list)
-    reference_set = build_entity_with_incoming(reference_annotation_list)
-    print(hypothesis_set)
+    hypothesis_set = build_entity_with_relations(hypothesis_annotation_list)
+    reference_set = build_entity_with_relations(reference_annotation_list)
 
     intersection = hypothesis_set & reference_set
 
