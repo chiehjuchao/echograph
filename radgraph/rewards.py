@@ -257,6 +257,42 @@ def hierarchical_reward(hypothesis_annotation_list, reference_annotation_list):
         return (gauge_reward + textual_reward) / 2.0
 
 
+def entity_with_incoming_relations_reward(hypothesis_annotation_list, reference_annotation_list):
+    def build_entity_with_incoming(annotation_list):
+        incoming_relations = {eid: [] for eid in annotation_list["entities"]}
+
+        # Find incoming relations for each entity
+        for eid, entity in annotation_list["entities"].items():
+            for relation in entity.get("relations", []):
+                target_id = relation[1]
+                incoming_relations[target_id].append(entity["tokens"].lower())
+
+        entity_sets = set()
+        for eid, entity in annotation_list["entities"].items():
+            tokens = [entity["tokens"].lower()] + sorted(incoming_relations[eid])
+            entity_representation = "|".join(tokens)
+            entity_sets.add((entity_representation, entity["label"]))
+
+        return entity_sets
+
+    hypothesis_set = build_entity_with_incoming(hypothesis_annotation_list)
+    reference_set = build_entity_with_incoming(reference_annotation_list)
+    print(hypothesis_set)
+
+    intersection = hypothesis_set & reference_set
+
+    precision = len(intersection) / len(hypothesis_set) if hypothesis_set else 0.0
+    recall = len(intersection) / len(reference_set) if reference_set else 0.0
+
+    f1_score = (
+        (2 * precision * recall) / (precision + recall)
+        if (precision + recall) else 0.0
+    )
+
+    return f1_score
+
+
+
 def compute_reward(
         hypothesis_annotation_list,
         reference_annotation_list,
@@ -274,7 +310,7 @@ def compute_reward(
 
     weighted_gauge = weighted_gauge_meas_f1_reward(hypothesis_annotation_list, reference_annotation_list, alpha)
     harmonic = weighted_harmonic_mean_reward(hypothesis_annotation_list, reference_annotation_list, beta)
-    hierarchical = hierarchical_reward(hypothesis_annotation_list, reference_annotation_list)
+    hierarchical = entity_with_incoming_relations_reward(hypothesis_annotation_list, reference_annotation_list)
 
     all = (weighted_gauge, harmonic, hierarchical)
 
