@@ -295,6 +295,63 @@ def entity_with_incoming_relations_reward(hypothesis_annotation_list, reference_
 
 
 
+def weighted_entity_incoming_relations_reward(
+    hypothesis_annotation_list, reference_annotation_list, meas_weight=5.0
+):
+    def build_weighted_entities(annotation_list):
+        entities = annotation_list["entities"]
+        incoming_relations = {eid: [] for eid in entities}
+
+        # Track incoming relations
+        for eid, entity in entities.items():
+            for relation in entity.get("relations", []):
+                target_id = relation[1]
+                incoming_relations[target_id].append(entities[eid])
+
+        entity_dict = dict()
+        for eid, entity in entities.items():
+            has_outgoing_relations = bool(entity.get("relations"))
+            if not has_outgoing_relations:
+                # Start with the main entity
+                tokens = [entity["tokens"].lower()]
+                weight = meas_weight if entity["label"] == "MEAS" else 1
+
+                # Add incoming related entities
+                for incoming_entity in incoming_relations[eid]:
+                    tokens.append(incoming_entity["tokens"].lower())
+                    if incoming_entity["label"] == "MEAS":
+                        weight += (meas_weight - 1)  # additional weight if incoming entity is MEAS
+
+                entity_representation = "|".join(sorted(tokens))
+                entity_dict[(entity_representation, entity["label"])] = weight
+
+        return entity_dict
+
+    hyp_entities = build_weighted_entities(hypothesis_annotation_list)
+    ref_entities = build_weighted_entities(reference_annotation_list)
+
+    hyp_set = set(hyp_entities.keys())
+    ref_set = set(ref_entities.keys())
+    intersection = hyp_set & ref_set
+
+    # Compute weighted true positives, total hypothesis, and total reference
+    tp_weighted = sum(hyp_entities[e] for e in intersection)
+    total_hyp_weighted = sum(hyp_entities.values())
+    total_ref_weighted = sum(ref_entities.values())
+
+    precision = tp_weighted / total_hyp_weighted if total_hyp_weighted else 0.0
+    recall = tp_weighted / total_ref_weighted if total_ref_weighted else 0.0
+
+    f1_score = (
+        (2 * precision * recall) / (precision + recall)
+        if (precision + recall) else 0.0
+    )
+
+    return f1_score
+
+
+
+
 def compute_reward(
         hypothesis_annotation_list,
         reference_annotation_list,
@@ -312,7 +369,7 @@ def compute_reward(
 
     weighted_gauge = weighted_gauge_meas_f1_reward(hypothesis_annotation_list, reference_annotation_list, alpha)
     harmonic = weighted_harmonic_mean_reward(hypothesis_annotation_list, reference_annotation_list, beta)
-    hierarchical = entity_with_incoming_relations_reward(hypothesis_annotation_list, reference_annotation_list)
+    hierarchical = weighted_entity_incoming_relations_reward(hypothesis_annotation_list, reference_annotation_list)
 
     all = (weighted_gauge, harmonic, hierarchical)
 
